@@ -1,0 +1,24 @@
+{
+  "name": "pulsecheck",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/worker",
+    "apps/web",
+    "infra"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w apps/api",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:worker": "npm run dev -w apps/worker",
+    "migrate": "npm run migrate -w apps/api",
+    "build": "npm run build -w apps/api && npm run build -w apps/worker && npm run build -w apps/web",
+    "test": "npm run test -w apps/api",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "npm run typecheck -w apps/api && npm run typecheck -w apps/web"
+  },
+  "devDependencies": {
+    "eslint": "^9.9.0",
+    "typescript": "^5.5.4"
+  }
+}

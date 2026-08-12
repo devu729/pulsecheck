@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pulsecheck
+      POSTGRES_PASSWORD: pulsecheck
+      POSTGRES_DB: pulsecheck
+    ports:
+      - "5432:5432"
+    volumes:
+      - pulsecheck_pgdata:/var/lib/postgresql/data
+volumes:
+  pulsecheck_pgdata:

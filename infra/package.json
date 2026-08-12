@@ -1,0 +1,20 @@
+{
+  "name": "@pulsecheck/infra",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "deploy": "cdk deploy --all"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.150.0",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.150.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}
