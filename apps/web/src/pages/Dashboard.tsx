@@ -1,62 +1,97 @@
 import { useEffect, useState } from "react";
 import { api, type Monitor } from "../lib/api";
+import PulseLine from "../components/PulseLine";
 
-const STATUS_COLOR: Record<Monitor["status"], string> = {
-  up: "#2F8C82",
-  degraded: "#E3A63C",
-  down: "#D6573F",
-  paused: "#9AA39B",
-  pending: "#9AA39B",
+const STATUS_LABEL: Record<Monitor["status"], string> = {
+  up: "up",
+  degraded: "degraded",
+  down: "down",
+  paused: "paused",
+  pending: "pending",
 };
+
+function relativeTime(iso: string | null): string {
+  if (!iso) return "never checked";
+  const diffSec = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (diffSec < 60) return `${diffSec}s ago`;
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  return `${Math.floor(diffSec / 3600)}h ago`;
+}
 
 export default function Dashboard() {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = () => api.listMonitors().then(setMonitors).finally(() => setLoading(false));
+  const load = () => api.listMonitors().then(setMonitors).catch(() => {}).finally(() => setLoading(false));
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 15_000); // poll for live status; swap for WS/SSE later
+    const interval = setInterval(load, 15_000);
     return () => clearInterval(interval);
   }, []);
 
   const addMonitor = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!name || !url) return;
-    await api.createMonitor({ name, url });
-    setName(""); setUrl("");
-    load();
+    try {
+      await api.createMonitor({ name, url });
+      setName(""); setUrl("");
+      load();
+    } catch (err) {
+      setError((err as Error).message);
+    }
   };
 
   return (
-    <div style={{ maxWidth: 720, margin: "40px auto", fontFamily: "system-ui" }}>
-      <h1>Monitors</h1>
+    <div className="pc-shell">
+      <header className="pc-topbar">
+        <a href="/" className="pc-wordmark">
+          <span className="pc-wordmark-dot" />
+          PulseCheck
+        </a>
+        <button
+          className="pc-btn-ghost"
+          onClick={() => { localStorage.removeItem("pulsecheck_token"); window.location.href = "/login"; }}
+        >
+          Log out
+        </button>
+      </header>
 
-      <form onSubmit={addMonitor} style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-        <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <input placeholder="https://example.com" value={url} onChange={(e) => setUrl(e.target.value)} style={{ flex: 1 }} />
-        <button type="submit">Add monitor</button>
-      </form>
+      <main className="pc-main">
+        <h1 className="pc-page-title">Monitors</h1>
+        <p className="pc-page-sub">Every monitor here is checked on its own interval and flips state on three consecutive failures.</p>
 
-      {loading ? (
-        <p>Loading…</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {monitors.map((m) => (
-            <li key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid #eee" }}>
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: STATUS_COLOR[m.status] }} />
-              <strong>{m.name}</strong>
-              <span style={{ color: "#777", fontSize: 13 }}>{m.url}</span>
-              <span style={{ marginLeft: "auto", fontSize: 12, color: "#999" }}>
-                {m.last_checked_at ? new Date(m.last_checked_at).toLocaleTimeString() : "not checked yet"}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+        <form onSubmit={addMonitor} className="pc-add-row">
+          <input className="pc-field" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+          <input className="pc-field" placeholder="https://example.com" value={url} onChange={(e) => setUrl(e.target.value)} />
+          <button type="submit" className="pc-btn pc-btn-brand">Add monitor</button>
+        </form>
+        {error && <p className="pc-error">{error}</p>}
+
+        {loading ? (
+          <p className="pc-center-loading">loading\u2026</p>
+        ) : monitors.length === 0 ? (
+          <p className="pc-empty">No monitors yet \u2014 add a URL above to start watching it.</p>
+        ) : (
+          <ul className="pc-monitor-list">
+            {monitors.map((m) => (
+              <li key={m.id} className="pc-monitor-row">
+                <PulseLine status={m.status} width={80} height={26} />
+                <div>
+                  <div className="pc-monitor-name">{m.name}</div>
+                  <span className="pc-monitor-url">{m.url}</span>
+                </div>
+                <span className={`pc-status-pill ${m.status}`}>{STATUS_LABEL[m.status]}</span>
+                <span className="pc-timestamp">{relativeTime(m.last_checked_at)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
     </div>
   );
 }

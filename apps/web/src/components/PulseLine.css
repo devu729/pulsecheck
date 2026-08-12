@@ -1,0 +1,19 @@
+.pc-pulseline {
+  display: block;
+  overflow: visible;
+}
+
+.pc-pulseline-animated .pc-pulseline-track {
+  animation: pc-scroll 2.4s linear infinite;
+}
+
+@keyframes pc-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-80px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pc-pulseline-animated .pc-pulseline-track {
+    animation: none;
+  }
+}
