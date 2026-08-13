@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { App } from "aws-cdk-lib";
-import { PulseCheckStack } from "../lib/pulsecheck-stack.js";
+import { PulseCheckStack } from "../lib/pulsecheck-stack";
 
 const app = new App();
 
