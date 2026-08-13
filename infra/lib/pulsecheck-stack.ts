@@ -46,7 +46,7 @@ export class PulseCheckStack extends Stack {
       credentials: dbCredentials,
       databaseName: "pulsecheck",
       allocatedStorage: 20,
-      backupRetention: Duration.days(3),
+      backupRetention: Duration.days(0), // Free Tier RDS doesn't allow automated backups
       removalPolicy: RemovalPolicy.DESTROY, // portfolio project — not production data
       deletionProtection: false,
     });
@@ -87,9 +87,11 @@ export class PulseCheckStack extends Stack {
       code: workerCode,
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      environment: { ...lambdaEnv, ALERT_TO_EMAIL: "" }, // set post-deploy once SES identity is verified
+      environment: { ...lambdaEnv, ALERT_TO_EMAIL: process.env.ALERT_TO_EMAIL ?? "" }, // pass at deploy: ALERT_TO_EMAIL=you@example.com cdk deploy
       timeout: Duration.seconds(20),
-      reservedConcurrentExecutions: 20, // caps blast radius / RDS connection pressure
+      // No reservedConcurrentExecutions: small/free-tier accounts often have
+      // too low a total concurrency limit to reserve any meaningfully — SQS's
+      // own batch size already caps how many run at once in practice.
     });
 
     database.secret!.grantRead(dispatcherFn);
